@@ -1,0 +1,11 @@
+meta:
+  environment: dockerfile
+  toolchain:
+    name: dockerfile
+
+build:
+  dockerfile: Dockerfile
+
+run:
+  persistenceMount: /app/data
+  command: python main.py
