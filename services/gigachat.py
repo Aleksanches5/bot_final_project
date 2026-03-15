@@ -2,19 +2,20 @@ import logging
 import requests
 import time
 import uuid
-import base64
+import urllib3
 from typing import Optional
 from config import GIGACHAT_API_KEY, GIGACHAT_SCOPE, GIGACHAT_MODEL, MAX_TOKENS, TEMPERATURE
 
+# Отключить предупреждения об SSL — Сбер использует самоподписанный сертификат
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 logger = logging.getLogger(__name__)
 
-# Токен и его время истечения
 _access_token: Optional[str] = None
 _token_expires_at: float = 0
 
 
 def _get_access_token() -> str:
-    """Получить OAuth-токен GigaChat (кэшируется до истечения)."""
     global _access_token, _token_expires_at
 
     if _access_token and time.time() < _token_expires_at - 60:
@@ -29,14 +30,21 @@ def _get_access_token() -> str:
     }
     data = {"scope": GIGACHAT_SCOPE}
 
+    logger.info(f"Запрос токена GigaChat, scope={GIGACHAT_SCOPE}")
+    logger.info(f"API key (первые 10 символов): {GIGACHAT_API_KEY[:10]}...")
+
     try:
-        resp = requests.post(url, headers=headers, data=data, verify=False, timeout=30)
+        resp = requests.post(
+            url, headers=headers, data=data,
+            verify=False, timeout=30
+        )
+        logger.info(f"Ответ авторизации: HTTP {resp.status_code}")
+        logger.info(f"Тело ответа: {resp.text[:300]}")
         resp.raise_for_status()
         result = resp.json()
         _access_token = result["access_token"]
-        # expires_at в миллисекундах
         _token_expires_at = result.get("expires_at", 0) / 1000
-        logger.info("Токен GigaChat получен")
+        logger.info("Токен GigaChat успешно получен")
         return _access_token
     except Exception as e:
         logger.error(f"Ошибка получения токена GigaChat: {e}")
@@ -44,15 +52,8 @@ def _get_access_token() -> str:
 
 
 def chat(messages: list[dict], system_prompt: str = None) -> str:
-    """
-    Отправить сообщения в GigaChat и получить ответ.
-    
-    messages: список {"role": "user"/"assistant", "content": "..."}
-    system_prompt: системный промпт
-    """
     token = _get_access_token()
 
-    # Формируем список сообщений
     full_messages = []
     if system_prompt:
         full_messages.append({"role": "system", "content": system_prompt})
@@ -73,18 +74,20 @@ def chat(messages: list[dict], system_prompt: str = None) -> str:
     }
 
     try:
-        resp = requests.post(url, headers=headers, json=payload, verify=False, timeout=60)
+        resp = requests.post(
+            url, headers=headers, json=payload,
+            verify=False, timeout=60
+        )
+        logger.info(f"Ответ GigaChat: HTTP {resp.status_code}")
         resp.raise_for_status()
         result = resp.json()
-        answer = result["choices"][0]["message"]["content"]
-        return answer
+        return result["choices"][0]["message"]["content"]
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 401:
-            # Токен истёк — сбросить и попробовать ещё раз
             global _access_token
             _access_token = None
             return chat(messages, system_prompt)
-        logger.error(f"HTTP ошибка GigaChat: {e}")
+        logger.error(f"HTTP ошибка GigaChat: {e}, тело: {e.response.text[:200]}")
         raise
     except Exception as e:
         logger.error(f"Ошибка запроса GigaChat: {e}")
@@ -92,7 +95,6 @@ def chat(messages: list[dict], system_prompt: str = None) -> str:
 
 
 def build_system_prompt(knowledge_chunks: list[str] = None, ad_data_summary: str = None) -> str:
-    """Собрать системный промпт с контекстом из базы знаний."""
     base = """Ты — экспертный аналитик рекламных кампаний. Твоя задача — анализировать рекламные метрики и давать конкретные рекомендации по оптимизации.
 
 Формат ответа:
@@ -110,8 +112,7 @@ def build_system_prompt(knowledge_chunks: list[str] = None, ad_data_summary: str
 💡 **ОЖИДАЕМЫЙ ЭФФЕКТ**
 — Что даст каждое действие
 
-Всегда опирайся на конкретные данные. Не давай общих советов без привязки к цифрам.
-Отвечай на русском языке."""
+Всегда опирайся на конкретные данные. Отвечай на русском языке."""
 
     if knowledge_chunks:
         knowledge = "\n\n".join(knowledge_chunks)
