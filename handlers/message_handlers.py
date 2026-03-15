@@ -29,7 +29,14 @@ async def _handle_urls(update, context, user_id: int, urls: list[str]):
     failed = []
     for url in urls:
         try:
-            content = fetch_url_content(url)
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(fetch_url_content, url)
+                try:
+                    content = future.result(timeout=10)
+                except concurrent.futures.TimeoutError:
+                    failed.append(url)
+                    continue
             if len(content) < 100:
                 failed.append(url)
                 continue
