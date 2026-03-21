@@ -13,7 +13,6 @@ def chat(messages: list[dict], system_prompt: str = None) -> str:
     if system_prompt:
         full_messages.append({"role": "system", "content": system_prompt})
     full_messages.extend(messages)
-
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
@@ -24,7 +23,6 @@ def chat(messages: list[dict], system_prompt: str = None) -> str:
         "max_tokens": MAX_TOKENS,
         "temperature": TEMPERATURE
     }
-
     logger.info("Запрос к Groq API")
     try:
         resp = requests.post(
@@ -42,7 +40,7 @@ def chat(messages: list[dict], system_prompt: str = None) -> str:
 
 
 def build_system_prompt(knowledge_chunks: list[str] = None, ad_data_summary: str = None) -> str:
-    base = """Ты — экспертный аналитик рекламных кампаний. Анализируй метрики и давай конкретные рекомендации по оптимизации.
+    base = """Ты — экспертный аналитик рекламных кампаний. Анализируй метрики и давай конкретные рекомендации.
 
 Формат ответа:
 📊 АНАЛИЗ МЕТРИК
@@ -51,7 +49,6 @@ def build_system_prompt(knowledge_chunks: list[str] = None, ad_data_summary: str
 💡 ОЖИДАЕМЫЙ ЭФФЕКТ
 
 Отвечай на русском языке."""
-
     if knowledge_chunks:
         base += "\n\n---\nСПРАВКИ О КАНАЛАХ:\n" + "\n\n".join(knowledge_chunks)
     if ad_data_summary:
