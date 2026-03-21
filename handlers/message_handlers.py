@@ -63,7 +63,7 @@ async def _handle_urls(update, context, user_id: int, urls: list[str]):
         "\n".join(result_lines),
         chat_id=update.effective_chat.id,
         message_id=msg.message_id,
-        parse_mode="Markdown"
+        
     )
 
 
@@ -110,12 +110,12 @@ async def _handle_chat(update, context, user_id: int, user_text: str):
 
         # Отправить ответ частями если длинный
         if len(response) <= 4096:
-            await update.message.reply_text(response, parse_mode="Markdown")
+            await update.message.reply_text(response, )
         else:
             parts = [response[i:i+4000] for i in range(0, len(response), 4000)]
             for i, part in enumerate(parts):
                 prefix = f"_(часть {i+1}/{len(parts)})_\n\n" if len(parts) > 1 else ""
-                await update.message.reply_text(prefix + part, parse_mode="Markdown")
+                await update.message.reply_text(prefix + part, )
 
     except Exception as e:
         logger.error(f"Ошибка GigaChat для user {user_id}: {e}", exc_info=True)
@@ -123,7 +123,7 @@ async def _handle_chat(update, context, user_id: int, user_text: str):
             f"❌ Ошибка при обращении к GigaChat:\n`{str(e)}`\n\nПопробуй снова.",
             chat_id=update.effective_chat.id,
             message_id=thinking_msg.message_id,
-            parse_mode="Markdown"
+            
         )
 
 
