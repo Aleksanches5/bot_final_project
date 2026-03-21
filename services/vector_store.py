@@ -16,13 +16,13 @@ def add_texts(user_id, texts, metadatas=None):
     logger.info(f"Добавлено {len(texts)} чанков для user {user_id}")
     return [str(i) for i in range(len(ex)-len(texts), len(ex))]
 
-def search_relevant(user_id, query, n_results=5):
+def search_relevant(user_id, query, n_results=10):
     p = os.path.join(_user_dir(user_id), "texts.json")
     if not os.path.exists(p): return []
     texts = json.load(open(p, encoding="utf-8"))
-    words = set(query.lower().split())
-    scored = sorted([(sum(1 for w in words if w in t.lower()), t) for t in texts], reverse=True)
-    return [t for s, t in scored[:n_results] if s > 0] or texts[:n_results]
+    if not texts: return []
+    # Возвращаем все тексты (не больше 10) — чтобы модель видела весь контекст
+    return texts[:n_results]
 
 def delete_collection(user_id):
     import shutil
