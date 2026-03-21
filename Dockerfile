@@ -2,24 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Системные зависимости
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y gcc g++ && rm -rf /var/lib/apt/lists/*
 
-# Python зависимости
+# Сначала только requirements — этот слой кешируется
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Код приложения
+# Потом код — этот слой пересобирается быстро
 COPY . .
 
-# Создать директории для данных
-RUN mkdir -p data/chroma_db data/uploads
+RUN mkdir -p data/chroma_db data/uploads data/store
 
-# Отключить буферизацию Python-логов
 ENV PYTHONUNBUFFERED=1
 
 CMD ["python", "main.py"]
