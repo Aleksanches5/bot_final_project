@@ -140,13 +140,10 @@ def _build_ad_data_summary(ad_data: list[dict]) -> str:
             if sheet_names:
                 data = data[sheet_names[0]]
         columns = data.get("columns", [])
-        stats = data.get("numeric_stats", {})
-        shape = data.get("shape", [0, 0])
+        preview = data.get("preview", [])
         lines.append(f"\n📊 {source} ({channel})")
-        lines.append(f"  Строк: {shape[0]}, метрики: {', '.join(str(c) for c in columns[:8])}")
-        for col, s in list(stats.items())[:6]:
-            lines.append(
-                f"  {col}: сумма={s['sum']}, среднее={s['mean']}, "
-                f"мин={s['min']}, макс={s['max']}"
-            )
+        lines.append(f"Столбцы: {', '.join(str(c) for c in columns)}")
+        lines.append("Данные:")
+        for row in preview[:20]:
+            lines.append("  " + ", ".join(f"{k}: {v}" for k, v in row.items()))
     return "\n".join(lines)
