@@ -1,103 +1,34 @@
-import logging
-import os
-import json
-import pickle
-import numpy as np
-from config import CHROMA_PATH  # переиспользуем путь как папку хранилища
-
+import logging, os, json
 logger = logging.getLogger(__name__)
+STORE_DIR = "data/store"
 
-# Папка хранилища
-STORE_DIR = CHROMA_PATH
+def _user_dir(user_id):
+    p = os.path.join(STORE_DIR, f"user_{user_id}")
+    os.makedirs(p, exist_ok=True)
+    return p
 
-_model = None
-
-
-def _get_model():
-    global _model
-    if _model is None:
-        from sentence_transformers import SentenceTransformer
-        _model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-    return _model
-
-
-def _user_dir(user_id: int) -> str:
-    path = os.path.join(STORE_DIR, f"user_{user_id}")
-    os.makedirs(path, exist_ok=True)
-    return path
-
-
-def _load_store(user_id: int):
-    """Загрузить индекс и тексты пользователя."""
-    import faiss
+def add_texts(user_id, texts, metadatas=None):
     d = _user_dir(user_id)
-    index_path = os.path.join(d, "index.faiss")
-    texts_path = os.path.join(d, "texts.json")
-
-    if os.path.exists(index_path) and os.path.exists(texts_path):
-        index = faiss.read_index(index_path)
-        with open(texts_path, "r", encoding="utf-8") as f:
-            texts = json.load(f)
-    else:
-        index = faiss.IndexFlatL2(384)  # размерность MiniLM
-        texts = []
-
-    return index, texts
-
-
-def _save_store(user_id: int, index, texts: list):
-    import faiss
-    d = _user_dir(user_id)
-    faiss.write_index(index, os.path.join(d, "index.faiss"))
-    with open(os.path.join(d, "texts.json"), "w", encoding="utf-8") as f:
-        json.dump(texts, f, ensure_ascii=False)
-
-
-def add_texts(user_id: int, texts: list[str], metadatas: list[dict] = None) -> list[str]:
-    """Добавить тексты в векторное хранилище."""
-    model = _get_model()
-    index, existing_texts = _load_store(user_id)
-
-    embeddings = model.encode(texts, normalize_embeddings=True).astype("float32")
-    index.add(embeddings)
-    existing_texts.extend(texts)
-
-    _save_store(user_id, index, existing_texts)
+    p = os.path.join(d, "texts.json")
+    ex = json.load(open(p, encoding="utf-8")) if os.path.exists(p) else []
+    ex.extend(texts)
+    json.dump(ex, open(p, "w", encoding="utf-8"), ensure_ascii=False)
     logger.info(f"Добавлено {len(texts)} чанков для user {user_id}")
+    return [str(i) for i in range(len(ex)-len(texts), len(ex))]
 
-    # Возвращаем условные ID
-    start = len(existing_texts) - len(texts)
-    return [str(i) for i in range(start, len(existing_texts))]
+def search_relevant(user_id, query, n_results=5):
+    p = os.path.join(_user_dir(user_id), "texts.json")
+    if not os.path.exists(p): return []
+    texts = json.load(open(p, encoding="utf-8"))
+    words = set(query.lower().split())
+    scored = sorted([(sum(1 for w in words if w in t.lower()), t) for t in texts], reverse=True)
+    return [t for s, t in scored[:n_results] if s > 0] or texts[:n_results]
 
-
-def search_relevant(user_id: int, query: str, n_results: int = 5) -> list[str]:
-    """Найти релевантные фрагменты по запросу."""
-    model = _get_model()
-    index, texts = _load_store(user_id)
-
-    if index.ntotal == 0:
-        return []
-
-    query_vec = model.encode([query], normalize_embeddings=True).astype("float32")
-    k = min(n_results, index.ntotal)
-    distances, indices = index.search(query_vec, k)
-
-    results = []
-    for idx in indices[0]:
-        if 0 <= idx < len(texts):
-            results.append(texts[idx])
-    return results
-
-
-def delete_collection(user_id: int):
-    """Удалить все данные пользователя."""
+def delete_collection(user_id):
     import shutil
     d = _user_dir(user_id)
-    if os.path.exists(d):
-        shutil.rmtree(d)
-        logger.info(f"Хранилище user_{user_id} удалено")
+    if os.path.exists(d): shutil.rmtree(d)
 
-
-def get_collection_size(user_id: int) -> int:
-    _, texts = _load_store(user_id)
-    return len(texts)
+def get_collection_size(user_id):
+    p = os.path.join(_user_dir(user_id), "texts.json")
+    return len(json.load(open(p, encoding="utf-8"))) if os.path.exists(p) else 0
