@@ -2,9 +2,6 @@ import logging
 import requests
 from config import GIGACHAT_API_KEY, MAX_TOKENS, TEMPERATURE
 
-# Отключить предупреждения об SSL — Сбер использует самоподписанный сертификат
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 logger = logging.getLogger(__name__)
 
 GROQ_API_KEY = GIGACHAT_API_KEY
@@ -28,7 +25,7 @@ def chat(messages: list[dict], system_prompt: str = None) -> str:
         "temperature": TEMPERATURE
     }
 
-    logger.info(f"Запрос к Groq API")
+    logger.info("Запрос к Groq API")
     try:
         resp = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -48,15 +45,15 @@ def build_system_prompt(knowledge_chunks: list[str] = None, ad_data_summary: str
     base = """Ты — экспертный аналитик рекламных кампаний. Анализируй метрики и давай конкретные рекомендации по оптимизации.
 
 Формат ответа:
-📊 АНАЛИЗ МЕТРИК — ключевые показатели
-🔍 ВЫВОДЫ — что работает / не работает
+📊 АНАЛИЗ МЕТРИК
+🔍 ВЫВОДЫ
 ⚡ РЕКОМЕНДАЦИИ: 1.[ВЫСОКИЙ] 2.[СРЕДНИЙ] 3.[НИЗКИЙ]
 💡 ОЖИДАЕМЫЙ ЭФФЕКТ
 
 Отвечай на русском языке."""
 
     if knowledge_chunks:
-        base += f"\n\n---\nСПРАВКИ О КАНАЛАХ:\n" + "\n\n".join(knowledge_chunks)
+        base += "\n\n---\nСПРАВКИ О КАНАЛАХ:\n" + "\n\n".join(knowledge_chunks)
     if ad_data_summary:
         base += f"\n\n---\nДАННЫЕ ПОЛЬЗОВАТЕЛЯ:\n{ad_data_summary}"
     return base
