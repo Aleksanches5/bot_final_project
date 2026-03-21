@@ -23,7 +23,7 @@ def chat(messages: list[dict], system_prompt: str = None) -> str:
         "max_tokens": MAX_TOKENS,
         "temperature": TEMPERATURE
     }
-    logger.info("Запрос к Groq API")
+    logger.info(f"Запрос к Groq API, system_prompt={len(system_prompt) if system_prompt else 0} chars")
     try:
         resp = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
