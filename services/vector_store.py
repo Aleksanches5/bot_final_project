@@ -1,6 +1,6 @@
 import logging, os, json
 logger = logging.getLogger(__name__)
-STORE_DIR = "data/store"
+STORE_DIR = "/app/data/store"
 
 def _user_dir(user_id):
     p = os.path.join(STORE_DIR, f"user_{user_id}")
