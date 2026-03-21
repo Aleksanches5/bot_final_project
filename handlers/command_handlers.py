@@ -29,7 +29,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📌 /help — подробная справка\n"
         "📌 /status — что уже загружено\n"
         "📌 /reset — очистить всю память",
-        parse_mode="Markdown"
+        
     )
 
 
@@ -51,7 +51,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/status — статус загруженных данных\n"
         "/reset — очистить всю память (данные + история)\n"
         "/help — эта справка",
-        parse_mode="Markdown"
+        
     )
 
 
@@ -85,7 +85,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💬 Сообщений в истории: {stats['messages']}\n\n"
         f"📚 **Загруженные справки:**\n{docs_list}\n"
         f"📈 **Рекламные данные:**\n{data_list}",
-        parse_mode="Markdown"
+        
     )
 
 

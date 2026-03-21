@@ -26,7 +26,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Файл слишком большой (максимум 20 МБ).")
         return
 
-    await update.message.reply_text(f"⏳ Загружаю файл `{filename}`...", parse_mode="Markdown")
+    await update.message.reply_text(f"⏳ Загружаю файл `{filename}`...", )
 
     try:
         # Скачать файл
@@ -54,7 +54,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"📊 Строк: {data['shape'][0]}, Столбцов: {data['shape'][1]}\n"
                 f"📋 Метрики: {', '.join(data['columns'][:8])}\n\n"
                 f"Теперь можешь спросить: _«Проанализируй мои кампании»_",
-                parse_mode="Markdown"
+                
             )
 
         # ─── Excel ───────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"📌 Канал: {channel}\n"
                 f"📋 Листы: {', '.join(sheets)}\n\n"
                 f"Теперь можешь спросить: _«Проанализируй мои кампании»_",
-                parse_mode="Markdown"
+                
             )
 
         # ─── PDF / TXT ────────────────────────────────────────────────────────
@@ -101,14 +101,14 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"✅ **Справка загружена: `{filename}`**\n\n"
                 f"📚 Добавлено {len(chunks)} фрагментов в базу знаний.\n\n"
                 f"Теперь бот будет использовать эту информацию при анализе.",
-                parse_mode="Markdown"
+                
             )
 
         else:
             await update.message.reply_text(
                 f"⚠️ Формат `{ext}` не поддерживается.\n"
                 "Поддерживаемые форматы: CSV, Excel (.xlsx/.xls), PDF, TXT",
-                parse_mode="Markdown"
+                
             )
 
     except Exception as e:
